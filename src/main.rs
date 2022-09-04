@@ -34,7 +34,8 @@ fn repl_mode() {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_n) => {
-                run(input);
+                let tokens = run(input);
+                println!("{:?}", tokens);
                 println!(">");
             }
             Err(error) => println!("error reading repl input: {}", error),
@@ -63,28 +64,42 @@ fn run(source: String) -> Vec<Token> {
     let mut tokens: Vec<Token> =  Vec::new();
 
     // let start: i32 = 0;
-    let source_length: i32 = source.len().try_into().unwrap();
-    let mut line: i32 = 0;
+    // let source_length: i32 = source.len().try_into().unwrap();
+    // let mut current: i32 = 0;
+    let line: i32 = 0;
 
-    let mut current: i32 = 0;
 
-    while current >= source_length {
-        scan_token()
+    let mut source_iterator = source.char_indices();
+    println!("source:{}, source_iterator: {:?}", source, source_iterator);
+    loop {
+        let character = source_iterator.next();
+        println!("character:{:?},", character);
+
+        match character {
+            Some((_ind, char)) => {
+                let token = parse_chars(char, &mut source_iterator);
+                match token {
+                    Some(token_type) => {
+                        tokens.push(Token { token_type, lexeme: "".to_owned(), literal: "".to_owned(), line })
+                    }
+                    None => {}
+                }
+            }
+            None => {
+                println!("found the end");
+            break;
+            }
+        }
+
     }
-
-    let hi = source.char_indices();
-    while (Some(hi.next())) {
-
-        let token = parse_chars(hi);
-    }
+    
 
     tokens.push(Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line });
-
     tokens
 }
 
 fn scan_token() {
-    parse_chars()
+    // parse_chars()
     todo!()
 }
 

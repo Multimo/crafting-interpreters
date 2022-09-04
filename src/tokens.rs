@@ -56,27 +56,28 @@ pub enum TokenType {
    
 // }
 
-pub fn parse_chars(mut char_string: CharIndices) -> Option<TokenType> {
+pub fn parse_chars(current_char: char, char_string: &mut CharIndices) -> Option<TokenType> {
         
-    let character = char_string.as_str();
-    match character {
-        "(" => Some(TokenType::LeftParen),
-        ")" => Some(TokenType::RightParen),
-        "[" => Some(TokenType::LeftBrace),
-        "]" => Some(TokenType::RightBrace),
-        "," => Some(TokenType::COMMA),
-        "." => Some(TokenType::DOT),
-        "-" => Some(TokenType::MINUS),
-        "+" => Some(TokenType::PLUS),
-        ";" => Some(TokenType::SemiColon),
-        "/" => Some(TokenType::SLASH),
-        "*" => Some(TokenType::STAR),
-        "!" => {
+    // let character = current_char.as_str();
+    // println!("char: {}", character);
+    match current_char {
+        '(' => Some(TokenType::LeftParen),
+        ')' => Some(TokenType::RightParen),
+        '[' => Some(TokenType::LeftBrace),
+        ']' => Some(TokenType::RightBrace),
+        ',' => Some(TokenType::COMMA),
+        '.' => Some(TokenType::DOT),
+        '-' => Some(TokenType::MINUS),
+        '+' => Some(TokenType::PLUS),
+        ';' => Some(TokenType::SemiColon),
+        '/' => Some(TokenType::SLASH),
+        '*' => Some(TokenType::STAR),
+        '!' => {
             let next_character = char_string.next();
             match next_character {
                 Some((_, characters)) => {
                     if characters.to_string() == "=" {
-                        // "!=" 
+                        // '!=' 
                         Some(TokenType::BangEqual)
                     } else {
                         Some(TokenType::BANG)
@@ -86,12 +87,12 @@ pub fn parse_chars(mut char_string: CharIndices) -> Option<TokenType> {
             }
         },
         
-        "=" => {
+        '=' => {
             let next_character = char_string.next();
             match next_character {
                 Some((_, characters)) => {
                     if characters.to_string() == "=" {
-                        // "==" 
+                        // '==' 
                         Some(TokenType::EqualEqual)
                     } else {
                         Some(TokenType::EQUAL)
@@ -100,12 +101,12 @@ pub fn parse_chars(mut char_string: CharIndices) -> Option<TokenType> {
                 None => Some(TokenType::EOF)
             }
         }
-        ">" => {
+        '>' => {
             let next_character = char_string.next();
             match next_character {
                 Some((_, characters)) => {
                     if characters.to_string() == "=" {
-                        // "!=" 
+                        // '!=' 
                         Some(TokenType::GreatEqual)
                     } else {
                         Some(TokenType::GREATER)
@@ -114,7 +115,7 @@ pub fn parse_chars(mut char_string: CharIndices) -> Option<TokenType> {
                 None => Some(TokenType::EOF)
             }
         },
-        "<" => {
+        '<' => {
             let next_character = char_string.next();
             match next_character {
                 Some((_, characters)) => {
@@ -132,6 +133,7 @@ pub fn parse_chars(mut char_string: CharIndices) -> Option<TokenType> {
     }
 }
 
+#[derive(Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
