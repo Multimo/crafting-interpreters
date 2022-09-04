@@ -61,7 +61,7 @@ fn load_file(file_path: String) -> String {
 
 fn scan_tokens(source: String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let line: i32 = 0;
+    let current_line: i32 = 0;
 
     let mut source_iterator = source.char_indices();
     println!("source:{}, source_iterator: {:?}", source, source_iterator);
@@ -77,9 +77,13 @@ fn scan_tokens(source: String) -> Vec<Token> {
                         token_type,
                         lexeme: "".to_owned(),
                         literal: "".to_owned(),
-                        line,
+                        line: current_line,
                     }),
-                    None => {}
+                    None => report(
+                        current_line,
+                        "".to_string(),
+                        "Unidentified char".to_string(),
+                    ),
                 }
             }
             None => {
@@ -88,7 +92,7 @@ fn scan_tokens(source: String) -> Vec<Token> {
                     token_type: TokenType::EOF,
                     lexeme: "".to_owned(),
                     literal: "".to_owned(),
-                    line,
+                    line: current_line,
                 });
                 break;
             }
@@ -106,12 +110,11 @@ fn report(line: i32, where_claus: String, message: String) {
 mod tests {
     use super::*;
 
-    #[test]
-    fn single_level_equals() {
-        let result = scan_tokens("=".to_string());
+    fn assert_scanner_results(source: &str, expected_token: TokenType, expect_length: usize) {
+        let result = scan_tokens(source.to_string());
         let expected = vec![
             Token {
-                token_type: TokenType::EQUAL,
+                token_type: expected_token,
                 lexeme: "".to_owned(),
                 literal: "".to_owned(),
                 line: 0,
@@ -124,77 +127,60 @@ mod tests {
             },
         ];
         println!("results, {:?}", result);
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.len(), expect_length);
         assert_eq!(result.first(), expected.first());
         assert_eq!(result.last(), expected.last());
+    }
+
+    #[test]
+    fn single_level_equals() {
+        assert_scanner_results("=", TokenType::EQUAL, 2);
     }
 
     #[test]
     fn single_level_greater() {
-        let result = scan_tokens(">".to_string());
-        let expected = vec![
-            Token {
-                token_type: TokenType::GREATER,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-            Token {
-                token_type: TokenType::EOF,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-        ];
-        println!("results, {:?}", result);
-        assert_eq!(result.len(), 2);
-        assert_eq!(result.first(), expected.first());
-        assert_eq!(result.last(), expected.last());
+        assert_scanner_results(">", TokenType::GREATER, 2);
     }
 
     #[test]
     fn single_level_left_bracket() {
-        let result = scan_tokens("[".to_string());
-        let expected = vec![
-            Token {
-                token_type: TokenType::LeftBrace,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-            Token {
-                token_type: TokenType::EOF,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-        ];
-        println!("results, {:?}", result);
-        assert_eq!(result.len(), 2);
-        assert_eq!(result.first(), expected.first());
-        assert_eq!(result.last(), expected.last());
+        assert_scanner_results("[", TokenType::LeftBrace, 2);
     }
 
     #[test]
     fn double_level_equal() {
-        let result = scan_tokens(">=".to_string());
-        let expected = vec![
-            Token {
-                token_type: TokenType::GreatEqual,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-            Token {
-                token_type: TokenType::EOF,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-        ];
-        println!("results, {:?}", result);
-        assert_eq!(result.len(), 2);
-        assert_eq!(result.first(), expected.first());
-        assert_eq!(result.last(), expected.last());
+        assert_scanner_results(">=", TokenType::GreatEqual, 2);
+    }
+
+    #[test]
+    fn comments() {
+        assert_scanner_results("// hello i am a comment \n!=", TokenType::BangEqual, 2)
+    }
+
+    #[test]
+    fn division() {
+        assert_scanner_results("/", TokenType::SLASH, 2)
+    }
+
+    #[test]
+    fn identifier() {
+        assert_scanner_results("hello", TokenType::IDENTIFIER, 2)
+    }
+
+    #[test]
+    fn and() {
+        assert_scanner_results("and", TokenType::AND, 2)
+    }
+    #[test]
+    fn string() {
+        assert_scanner_results("\"and\"", TokenType::STRING, 2)
+    }
+    #[test]
+    fn number() {
+        assert_scanner_results("123", TokenType::NUMBER, 2)
+    }
+    #[test]
+    fn unidentified() {
+        assert_scanner_results("@", TokenType::EOF, 1)
     }
 }
