@@ -11,6 +11,8 @@ use tokens::{Token, TokenType, parse_chars};
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    println!("Running compiler: {:?}", args);
+
     if args.len() == 1 {
         println!("Entering Repl mode");
         repl_mode();
@@ -25,7 +27,7 @@ fn main() {
 
     println!("With text:\n{}", contents);
 
-    run(contents);
+    scan_tokens(contents);
 }
 
 fn repl_mode() {
@@ -34,7 +36,7 @@ fn repl_mode() {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_n) => {
-                let tokens = run(input);
+                let tokens = scan_tokens(input);
                 println!("{:?}", tokens);
                 println!(">");
             }
@@ -58,16 +60,9 @@ fn load_file(file_path: String) -> String {
     }
 }
 
-// fn run_file() {}
-
-fn run(source: String) -> Vec<Token> {
+fn scan_tokens(source: String) -> Vec<Token> {
     let mut tokens: Vec<Token> =  Vec::new();
-
-    // let start: i32 = 0;
-    // let source_length: i32 = source.len().try_into().unwrap();
-    // let mut current: i32 = 0;
     let line: i32 = 0;
-
 
     let mut source_iterator = source.char_indices();
     println!("source:{}, source_iterator: {:?}", source, source_iterator);
@@ -86,21 +81,15 @@ fn run(source: String) -> Vec<Token> {
                 }
             }
             None => {
-                println!("found the end");
-            break;
+                println!("found the end return EOF");
+                tokens.push(Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line });
+                break;
             }
         }
 
     }
     
-
-    tokens.push(Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line });
     tokens
-}
-
-fn scan_token() {
-    // parse_chars()
-    todo!()
 }
 
 fn report(line: i32, where_claus: String, message: String) {
@@ -108,3 +97,61 @@ fn report(line: i32, where_claus: String, message: String) {
 }
 
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_level_equals() {
+        let result = scan_tokens("=".to_string());
+        let expected = vec![
+            Token{token_type: TokenType::EQUAL, lexeme: "".to_owned(), literal: "".to_owned(), line: 0, },
+            Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line: 0 }
+        ];
+        println!("results, {:?}", result);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.first(), expected.first());
+        assert_eq!(result.last(), expected.last());
+    }
+
+    #[test]
+    fn single_level_greater() {
+        let result = scan_tokens(">".to_string());
+        let expected = vec![
+            Token{token_type: TokenType::GREATER, lexeme: "".to_owned(), literal: "".to_owned(), line: 0, },
+            Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line: 0 }
+        ];
+        println!("results, {:?}", result);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.first(), expected.first());
+        assert_eq!(result.last(), expected.last());
+    }
+
+    #[test]
+    fn single_level_left_bracket() {
+        let result = scan_tokens("[".to_string());
+        let expected = vec![
+            Token{token_type: TokenType::LeftBrace, lexeme: "".to_owned(), literal: "".to_owned(), line: 0, },
+            Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line: 0 }
+        ];
+        println!("results, {:?}", result);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.first(), expected.first());
+        assert_eq!(result.last(), expected.last());
+    }
+
+    #[test]
+    fn double_level_equal() {
+        let result = scan_tokens(">=".to_string());
+        let expected = vec![
+            Token{token_type: TokenType::GreatEqual, lexeme: "".to_owned(), literal: "".to_owned(), line: 0, },
+            Token { token_type: TokenType::EOF, lexeme: "".to_owned(), literal: "".to_owned(), line: 0 }
+        ];
+        println!("results, {:?}", result);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.first(), expected.first());
+        assert_eq!(result.last(), expected.last());
+    }
+
+}

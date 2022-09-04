@@ -1,7 +1,7 @@
 use std::str::CharIndices;
 
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -59,7 +59,7 @@ pub enum TokenType {
 pub fn parse_chars(current_char: char, char_string: &mut CharIndices) -> Option<TokenType> {
         
     // let character = current_char.as_str();
-    // println!("char: {}", character);
+    println!("parse_chars: current_char({}), char_string({:?})", current_char, char_string);
     match current_char {
         '(' => Some(TokenType::LeftParen),
         ')' => Some(TokenType::RightParen),
@@ -75,65 +75,65 @@ pub fn parse_chars(current_char: char, char_string: &mut CharIndices) -> Option<
         '!' => {
             let next_character = char_string.next();
             match next_character {
-                Some((_, characters)) => {
-                    if characters.to_string() == "=" {
+                Some((_, next_char)) => {
+                    if next_char.to_string() == "=" {
                         // '!=' 
                         Some(TokenType::BangEqual)
                     } else {
                         Some(TokenType::BANG)
                     }
                 }
-                None => Some(TokenType::EOF)
+                None => Some(TokenType::BANG)
             }
         },
-        
         '=' => {
             let next_character = char_string.next();
             match next_character {
-                Some((_, characters)) => {
-                    if characters.to_string() == "=" {
+                Some((_, next_char)) => {
+                    if next_char.to_string() == "=" {
                         // '==' 
                         Some(TokenType::EqualEqual)
                     } else {
                         Some(TokenType::EQUAL)
                     }
                 }
-                None => Some(TokenType::EOF)
+                None => Some(TokenType::EQUAL)
             }
         }
         '>' => {
             let next_character = char_string.next();
             match next_character {
-                Some((_, characters)) => {
-                    if characters.to_string() == "=" {
+                Some((_, next_char)) => {
+                    if next_char.to_string() == "=" {
                         // '!=' 
                         Some(TokenType::GreatEqual)
                     } else {
                         Some(TokenType::GREATER)
                     }
                 }
-                None => Some(TokenType::EOF)
+                None => Some(TokenType::GREATER)
             }
         },
         '<' => {
             let next_character = char_string.next();
             match next_character {
-                Some((_, characters)) => {
-                    if characters.to_string() == "=" {
-                        // "!=" 
+                Some((_, next_char)) => {
+                    if next_char.to_string() == "=" {
+                        // '!=' 
                         Some(TokenType::LessEqual)
                     } else {
                         Some(TokenType::LESS)
                     }
                 }
-                None => Some(TokenType::EOF)
+                None => Some(TokenType::LESS)
             }
         },
+        ' ' => None,
         _ => None
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
