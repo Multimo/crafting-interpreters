@@ -110,11 +110,11 @@ fn report(line: i32, where_claus: String, message: String) {
 mod tests {
     use super::*;
 
-    fn assert_scanner_results(source: &str, expected_token: TokenType, expect_length: usize) {
+    fn assert_scanner_results(source: &str, expected_token_type: TokenType, expect_length: usize) {
         let result = scan_tokens(source.to_string());
         let expected = vec![
             Token {
-                token_type: expected_token,
+                token_type: expected_token_type,
                 lexeme: "".to_owned(),
                 literal: "".to_owned(),
                 line: 0,
@@ -182,5 +182,17 @@ mod tests {
     #[test]
     fn unidentified() {
         assert_scanner_results("@", TokenType::EOF, 1)
+    }
+    #[test]
+    fn fun() {
+        assert_scanner_results("fun", TokenType::FUN, 2)
+    }
+    #[test]
+    fn try_for() {
+        assert_scanner_results("for", TokenType::FOR, 2)
+    }
+    #[test]
+    fn try_false() {
+        assert_scanner_results("false", TokenType::FALSE, 2)
     }
 }

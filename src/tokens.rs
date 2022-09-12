@@ -1,6 +1,23 @@
-use std::str::CharIndices;
+use std::{
+    collections::{HashMap, HashSet},
+    str::CharIndices,
+};
 
 #[derive(Debug, PartialEq)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub literal: String,
+    pub line: i32,
+}
+
+impl Token {
+    fn to_string(&self) -> String {
+        format!("{:?} {} {}", self.token_type, self.lexeme, self.literal)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -153,10 +170,7 @@ pub fn parse_chars(
         }
         current_char if current_char.is_alphabetic() => {
             println!("found is_alphabetic {}", current_char);
-            match keyword_match(current_char, char_string) {
-                Some(t) => Some(t),
-                None => None,
-            }
+            keyword_match(current_char, char_string)
         }
         current_char if current_char.is_numeric() => {
             println!("found is_numeric {}", current_char);
@@ -173,104 +187,27 @@ pub fn parse_chars(
 
 fn keyword_match(current_char: char, char_string: &mut CharIndices) -> Option<TokenType> {
     match current_char {
-        'a' => {
-            if walk_keyword(char_string, "and".to_string()) {
-                Some(TokenType::AND)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'c' => {
-            if walk_keyword(char_string, "class".to_string()) {
-                Some(TokenType::CLASS)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'e' => {
-            if walk_keyword(char_string, "else".to_string()) {
-                Some(TokenType::ELSE)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'f' => {
-            if walk_keyword(char_string, "false".to_string()) {
-                Some(TokenType::FALSE)
-            } else if walk_keyword(char_string, "fun".to_string()) {
-                Some(TokenType::FUN)
-            } else if walk_keyword(char_string, "for".to_string()) {
-                Some(TokenType::FOR)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'i' => {
-            if walk_keyword(char_string, "if".to_string()) {
-                Some(TokenType::IF)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'n' => {
-            if walk_keyword(char_string, "nil".to_string()) {
-                Some(TokenType::NIL)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'o' => {
-            if walk_keyword(char_string, "or".to_string()) {
-                Some(TokenType::OR)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'p' => {
-            if walk_keyword(char_string, "print".to_string()) {
-                Some(TokenType::PRINT)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'r' => {
-            if walk_keyword(char_string, "return".to_string()) {
-                Some(TokenType::RETURN)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        's' => {
-            if walk_keyword(char_string, "super".to_string()) {
-                Some(TokenType::SUPER)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        't' => {
-            if walk_keyword(char_string, "this".to_string()) {
-                Some(TokenType::THIS)
-            } else if walk_keyword(char_string, "true".to_string()) {
-                Some(TokenType::TRUE)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'v' => {
-            if walk_keyword(char_string, "var".to_string()) {
-                Some(TokenType::VAR)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-        'w' => {
-            if walk_keyword(char_string, "while".to_string()) {
-                Some(TokenType::WHILE)
-            } else {
-                Some(walk_to_next_whitespace(char_string))
-            }
-        }
-
+        'a' => match_on_keywords(char_string, &["and"], &[TokenType::AND]),
+        'c' => match_on_keywords(char_string, &["class"], &[TokenType::CLASS]),
+        'e' => match_on_keywords(char_string, &["else"], &[TokenType::ELSE]),
+        'f' => match_on_keywords(
+            char_string,
+            &["for", "fun", "false"],
+            &[TokenType::FOR, TokenType::FUN, TokenType::FALSE],
+        ),
+        'i' => match_on_keywords(char_string, &["if"], &[TokenType::IF]),
+        'n' => match_on_keywords(char_string, &["nil"], &[TokenType::NIL]),
+        'o' => match_on_keywords(char_string, &["or"], &[TokenType::OR]),
+        'p' => match_on_keywords(char_string, &["print"], &[TokenType::PRINT]),
+        'r' => match_on_keywords(char_string, &["return"], &[TokenType::RETURN]),
+        's' => match_on_keywords(char_string, &["super"], &[TokenType::SUPER]),
+        't' => match_on_keywords(
+            char_string,
+            &["this", "true"],
+            &[TokenType::THIS, TokenType::TRUE],
+        ),
+        'v' => match_on_keywords(char_string, &["var"], &[TokenType::VAR]),
+        'w' => match_on_keywords(char_string, &["while"], &[TokenType::WHILE]),
         _ => Some(walk_to_next_whitespace(char_string)),
     }
 }
@@ -307,46 +244,71 @@ fn walk_to_next_quote(source_chars: &mut CharIndices) {
     }
 }
 
-fn walk_keyword(source_chars: &mut CharIndices, keyword: String) -> bool {
-    let mut keyword_iter = keyword.char_indices();
-    keyword_iter.next();
+/// .Returns Some(index) of matching keyword or None
+fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<usize> {
+    let mut keywords_iter = keywords.iter().map(|kw| kw.char_indices());
+    // keywords_iter;
 
-    let mut matches = true;
+    // [['t', 'h', 'i', 's'], ['t', 'r', 'u', 'e']]
+    // [['t 'h, 'i', 's'], ['t', 'r', 'u', 'e']]
+    // need to iterate on first
+    // on each iteration get the current index of each vec
+    // and return a vec with
+    // 0: ['t', 't'] => t => true
+    // 1: ['h', 'r'] => e
+    // 2: ['i', 'u']
+    // 3: ['s', 'e']
+    // 4: [None, None]
+
+    let arr: [usize; 5] = (1..keywords_iter.count())
+        .collect::<Vec<_>>()
+        .try_into()
+        .expect("wrong size iterator");
+    let mut matching_index: Option<usize> = None;
+
+    let amount_words = vec![0..keywords_iter.count()];
+    let matching_words: HashSet<usize> = HashSet::from_iter(amount_words.iter().cloned());
+
+    let mut loop_index: usize = 1; // since the first letter is already matched
     loop {
-        let keyword_o = keyword_iter.next();
-        let current_letter: char = match keyword_o {
-            Some(e) => e.1,
-            None => {
-                break;
-            }
-        };
-
+        let current_letter: char;
         match source_chars.next() {
             Some(s) => {
-                if s.1 != current_letter {
-                    matches = false;
-                    break;
+                for keyword_char_iter in keywords_iter {
+                    match keyword_char_iter.nth(loop_index) {
+                        Some((_, keyword_char)) => {
+                            if keyword_char != s.1 {
+                                // matching_words
+                            }
+                        }
+                        None => false,
+                    };
                 }
+
+                loop_index = loop_index + 1;
             }
             None => {
                 break;
             }
         }
+
+        // for each charindexin var we need to check a char against current char
+        // keywords_iter
     }
 
-    matches
+    matching_index
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Token {
-    pub token_type: TokenType,
-    pub lexeme: String,
-    pub literal: String,
-    pub line: i32,
-}
-
-impl Token {
-    fn to_string(&self) -> String {
-        format!("{:?} {} {}", self.token_type, self.lexeme, self.literal)
+fn match_on_keywords(
+    source_chars: &mut CharIndices,
+    keywords: &[&str],
+    token_types: &[TokenType],
+) -> Option<TokenType> {
+    match walk_keywords(source_chars, keywords) {
+        Some(index) => match token_types.get(index) {
+            Some(t) => Some(*t),
+            None => Some(walk_to_next_whitespace(source_chars)),
+        },
+        None => Some(walk_to_next_whitespace(source_chars)),
     }
 }
