@@ -110,89 +110,107 @@ fn report(line: i32, where_claus: String, message: String) {
 mod tests {
     use super::*;
 
-    fn assert_scanner_results(source: &str, expected_token_type: TokenType, expect_length: usize) {
+    fn assert_scanner_results(source: &str, expected_token_type: Vec<TokenType>) {
         let result = scan_tokens(source.to_string());
-        let expected = vec![
-            Token {
-                token_type: expected_token_type,
+        let mut expected: Vec<Token> = expected_token_type
+            .into_iter()
+            .map(|token| Token {
+                token_type: token,
                 lexeme: "".to_owned(),
                 literal: "".to_owned(),
                 line: 0,
-            },
-            Token {
-                token_type: TokenType::EOF,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            },
-        ];
+            })
+            .collect();
+
+        let mut eof_token = vec![Token {
+            token_type: TokenType::EOF,
+            lexeme: "".to_owned(),
+            literal: "".to_owned(),
+            line: 0,
+        }];
+        expected.append(&mut eof_token);
+
         println!("results, {:?}", result);
-        assert_eq!(result.len(), expect_length);
-        assert_eq!(result.first(), expected.first());
-        assert_eq!(result.last(), expected.last());
+        println!("expected, {:?}", expected);
+
+        assert_eq!(result.len(), expected.len());
+        for (index, token) in expected.into_iter().enumerate() {
+            let result_token = result.get(index).unwrap();
+            assert_eq!(*result_token, token);
+        }
     }
 
     #[test]
     fn single_level_equals() {
-        assert_scanner_results("=", TokenType::EQUAL, 2);
+        assert_scanner_results("=", vec![TokenType::EQUAL]);
     }
 
     #[test]
     fn single_level_greater() {
-        assert_scanner_results(">", TokenType::GREATER, 2);
+        assert_scanner_results(">", vec![TokenType::GREATER]);
     }
 
     #[test]
     fn single_level_left_bracket() {
-        assert_scanner_results("[", TokenType::LeftBrace, 2);
+        assert_scanner_results("[", vec![TokenType::LeftBrace]);
     }
 
     #[test]
     fn double_level_equal() {
-        assert_scanner_results(">=", TokenType::GreatEqual, 2);
+        assert_scanner_results(">=", vec![TokenType::GreatEqual]);
     }
 
     #[test]
     fn comments() {
-        assert_scanner_results("// hello i am a comment \n!=", TokenType::BangEqual, 2)
+        assert_scanner_results("// hello i am a comment \n!=", vec![TokenType::BangEqual])
     }
 
     #[test]
     fn division() {
-        assert_scanner_results("/", TokenType::SLASH, 2)
+        assert_scanner_results("/", vec![TokenType::SLASH])
     }
 
     #[test]
     fn identifier() {
-        assert_scanner_results("hello", TokenType::IDENTIFIER, 2)
+        assert_scanner_results("hello", vec![TokenType::IDENTIFIER])
     }
 
     #[test]
     fn and() {
-        assert_scanner_results("and", TokenType::AND, 2)
+        assert_scanner_results("and", vec![TokenType::AND])
     }
     #[test]
     fn string() {
-        assert_scanner_results("\"and\"", TokenType::STRING, 2)
+        assert_scanner_results("\"and\"", vec![TokenType::STRING])
     }
     #[test]
     fn number() {
-        assert_scanner_results("123", TokenType::NUMBER, 2)
+        assert_scanner_results("123", vec![TokenType::NUMBER])
     }
     #[test]
     fn unidentified() {
-        assert_scanner_results("@", TokenType::EOF, 1)
+        let eof_token = vec![Token {
+            token_type: TokenType::EOF,
+            lexeme: "".to_owned(),
+            literal: "".to_owned(),
+            line: 0,
+        }];
+        assert_eq!(scan_tokens("@".to_string()).first(), eof_token.first())
     }
     #[test]
     fn fun() {
-        assert_scanner_results("fun", TokenType::FUN, 2)
+        assert_scanner_results("fun", vec![TokenType::FUN])
     }
     #[test]
     fn try_for() {
-        assert_scanner_results("for", TokenType::FOR, 2)
+        assert_scanner_results("for", vec![TokenType::FOR])
     }
     #[test]
     fn try_false() {
-        assert_scanner_results("false", TokenType::FALSE, 2)
+        assert_scanner_results("false", vec![TokenType::FALSE])
+    }
+    #[test]
+    fn try_false_fun() {
+        assert_scanner_results("false fun", vec![TokenType::FALSE, TokenType::FUN])
     }
 }

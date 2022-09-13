@@ -262,8 +262,13 @@ fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<us
     loop {
         match source_chars.next() {
             Some((_, current_source_char)) => {
-                let mut keywords_iter_index = 0;
-                for mut keyword_char_iter in keywords_iter.clone() {
+                if current_source_char.is_whitespace() {
+                    break;
+                }
+
+                for (keywords_iter_index, mut keyword_char_iter) in
+                    keywords_iter.clone().enumerate()
+                {
                     match keyword_char_iter.nth(loop_index) {
                         Some((_, keyword_char)) => {
                             if keyword_char != current_source_char {
@@ -275,10 +280,9 @@ fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<us
                             matching_words.remove(&loop_index);
                         }
                     };
-                    keywords_iter_index = keywords_iter_index + 1;
                 }
 
-                loop_index = loop_index + 1;
+                loop_index += 1;
             }
             None => {
                 break;
@@ -286,10 +290,7 @@ fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<us
         }
     }
 
-    match matching_words.iter().next() {
-        Some(index) => Some(*index),
-        None => None,
-    }
+    matching_words.iter().next().copied()
 }
 
 fn match_on_keywords(
