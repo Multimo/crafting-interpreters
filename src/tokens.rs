@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    str::CharIndices,
-};
+use std::{collections::HashSet, str::CharIndices};
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
@@ -11,11 +8,11 @@ pub struct Token {
     pub line: i32,
 }
 
-impl Token {
-    fn to_string(&self) -> String {
-        format!("{:?} {} {}", self.token_type, self.lexeme, self.literal)
-    }
-}
+// impl Token {
+//     fn to_string(&self) -> String {
+//         format!("{:?} {} {}", self.token_type, self.lexeme, self.literal)
+//     }
+// }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
@@ -246,8 +243,7 @@ fn walk_to_next_quote(source_chars: &mut CharIndices) {
 
 /// .Returns Some(index) of matching keyword or None
 fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<usize> {
-    let mut keywords_iter = keywords.iter().map(|kw| kw.char_indices());
-    // keywords_iter;
+    let keywords_iter = keywords.iter().map(|kw| kw.char_indices());
 
     // [['t', 'h', 'i', 's'], ['t', 'r', 'u', 'e']]
     // [['t 'h, 'i', 's'], ['t', 'r', 'u', 'e']]
@@ -255,34 +251,31 @@ fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<us
     // on each iteration get the current index of each vec
     // and return a vec with
     // 0: ['t', 't'] => t => true
-    // 1: ['h', 'r'] => e
+    // 1: ['h', 'r']
     // 2: ['i', 'u']
     // 3: ['s', 'e']
     // 4: [None, None]
-
-    let arr: [usize; 5] = (1..keywords_iter.count())
-        .collect::<Vec<_>>()
-        .try_into()
-        .expect("wrong size iterator");
-    let mut matching_index: Option<usize> = None;
-
-    let amount_words = vec![0..keywords_iter.count()];
-    let matching_words: HashSet<usize> = HashSet::from_iter(amount_words.iter().cloned());
+    let amount_words: Vec<usize> = (0..keywords.len()).collect();
+    let mut matching_words: HashSet<usize> = HashSet::from_iter(amount_words);
 
     let mut loop_index: usize = 1; // since the first letter is already matched
     loop {
-        let current_letter: char;
         match source_chars.next() {
-            Some(s) => {
-                for keyword_char_iter in keywords_iter {
+            Some((_, current_source_char)) => {
+                let mut keywords_iter_index = 0;
+                for mut keyword_char_iter in keywords_iter.clone() {
                     match keyword_char_iter.nth(loop_index) {
                         Some((_, keyword_char)) => {
-                            if keyword_char != s.1 {
-                                // matching_words
+                            if keyword_char != current_source_char {
+                                // not matching_words
+                                matching_words.remove(&keywords_iter_index);
                             }
                         }
-                        None => false,
+                        None => {
+                            matching_words.remove(&loop_index);
+                        }
                     };
+                    keywords_iter_index = keywords_iter_index + 1;
                 }
 
                 loop_index = loop_index + 1;
@@ -291,12 +284,12 @@ fn walk_keywords(source_chars: &mut CharIndices, keywords: &[&str]) -> Option<us
                 break;
             }
         }
-
-        // for each charindexin var we need to check a char against current char
-        // keywords_iter
     }
 
-    matching_index
+    match matching_words.iter().next() {
+        Some(index) => Some(*index),
+        None => None,
+    }
 }
 
 fn match_on_keywords(
