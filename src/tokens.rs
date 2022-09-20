@@ -1,6 +1,6 @@
 use std::{collections::HashSet, str::CharIndices};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
@@ -14,7 +14,7 @@ pub struct Token {
 //     }
 // }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,

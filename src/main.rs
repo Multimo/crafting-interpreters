@@ -188,6 +188,14 @@ mod tests {
         assert_scanner_results("123", vec![TokenType::NUMBER])
     }
     #[test]
+    fn number_with_decimal() {
+        assert_scanner_results("123.123", vec![TokenType::NUMBER])
+    }
+    #[test]
+    fn number_with_decimal_but_word() {
+        assert_scanner_results("123.123ffafaf", vec![TokenType::IDENTIFIER])
+    }
+    #[test]
     fn unidentified() {
         let eof_token = vec![Token {
             token_type: TokenType::EOF,
@@ -212,5 +220,22 @@ mod tests {
     #[test]
     fn try_false_fun() {
         assert_scanner_results("false fun", vec![TokenType::FALSE, TokenType::FUN])
+    }
+    #[test]
+    fn try_total_word() {
+        assert_scanner_results("falsey", vec![TokenType::IDENTIFIER])
+    }
+    #[test]
+    fn try_decimal_word() {
+        assert_scanner_results(
+            "var hello = 2.1212 fun",
+            vec![
+                TokenType::VAR,
+                TokenType::IDENTIFIER,
+                TokenType::EQUAL,
+                TokenType::NUMBER,
+                TokenType::FUN,
+            ],
+        )
     }
 }
