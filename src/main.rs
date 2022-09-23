@@ -73,12 +73,7 @@ fn scan_tokens(source: String) -> Vec<Token> {
             Some((_ind, char)) => {
                 let token = parse_chars(char, &mut source_iterator);
                 match token {
-                    Some(token_type) => tokens.push(Token {
-                        token_type,
-                        lexeme: "".to_owned(),
-                        literal: "".to_owned(),
-                        line: current_line,
-                    }),
+                    Some(token) => tokens.push(token),
                     None => report(
                         current_line,
                         "".to_string(),
@@ -88,12 +83,7 @@ fn scan_tokens(source: String) -> Vec<Token> {
             }
             None => {
                 println!("found the end return EOF");
-                tokens.push(Token {
-                    token_type: TokenType::EOF,
-                    lexeme: "".to_owned(),
-                    literal: "".to_owned(),
-                    line: current_line,
-                });
+                tokens.push(Token::new_token(TokenType::EOF));
                 break;
             }
         }
@@ -108,133 +98,271 @@ fn report(line: i32, where_claus: String, message: String) {
 
 #[cfg(test)]
 mod tests {
+    use std::vec;
+
+    use crate::tokens::Literal;
+
     use super::*;
 
-    fn assert_scanner_results(source: &str, expected_token_type: Vec<TokenType>) {
+    fn assert_scanner_results(source: &str, mut expected_token: Vec<Token>) {
         let result = scan_tokens(source.to_string());
-        let mut expected: Vec<Token> = expected_token_type
-            .into_iter()
-            .map(|token| Token {
-                token_type: token,
-                lexeme: "".to_owned(),
-                literal: "".to_owned(),
-                line: 0,
-            })
-            .collect();
 
-        let mut eof_token = vec![Token {
-            token_type: TokenType::EOF,
-            lexeme: "".to_owned(),
-            literal: "".to_owned(),
-            line: 0,
-        }];
-        expected.append(&mut eof_token);
+        let mut eof_token = vec![Token::new_token(TokenType::EOF)];
+        expected_token.append(&mut eof_token);
 
-        println!("results, {:?}", result);
-        println!("expected, {:?}", expected);
+        println!("expected the following {:?}", expected_token);
+        println!("found this {:?}", result);
 
-        assert_eq!(result.len(), expected.len());
-        for (index, token) in expected.into_iter().enumerate() {
-            let result_token = result.get(index).unwrap();
+        assert_eq!(result.len(), expected_token.len());
+        for (index, token) in expected_token.into_iter().enumerate() {
+            let result_token: &Token = result.get(index).unwrap();
             assert_eq!(*result_token, token);
         }
     }
 
     #[test]
     fn single_level_equals() {
-        assert_scanner_results("=", vec![TokenType::EQUAL]);
+        assert_scanner_results("=", vec![Token::new_token(TokenType::EQUAL)]);
     }
 
     #[test]
     fn single_level_greater() {
-        assert_scanner_results(">", vec![TokenType::GREATER]);
+        assert_scanner_results(">", vec![Token::new_token(TokenType::GREATER)]);
     }
 
     #[test]
     fn single_level_left_bracket() {
-        assert_scanner_results("[", vec![TokenType::LeftBrace]);
+        assert_scanner_results("[", vec![Token::new_token(TokenType::LeftBrace)]);
     }
 
     #[test]
     fn double_level_equal() {
-        assert_scanner_results(">=", vec![TokenType::GreatEqual]);
+        assert_scanner_results(">=", vec![Token::new_token(TokenType::GreatEqual)]);
     }
 
     #[test]
     fn comments() {
-        assert_scanner_results("// hello i am a comment \n!=", vec![TokenType::BangEqual])
+        assert_scanner_results(
+            "// hello i am a comment \n!=",
+            vec![Token::new_token(TokenType::BangEqual)],
+        )
     }
 
     #[test]
     fn division() {
-        assert_scanner_results("/", vec![TokenType::SLASH])
+        assert_scanner_results("/", vec![Token::new_token(TokenType::SLASH)])
     }
 
     #[test]
     fn identifier() {
-        assert_scanner_results("hello", vec![TokenType::IDENTIFIER])
+        assert_scanner_results(
+            "hello",
+            vec![Token {
+                token_type: TokenType::IDENTIFIER,
+                lexeme: Some(vec!['h', 'e', 'l', 'l', 'o']),
+                line: 0,
+                literal: Some(Literal::Identifier("hello".to_string())),
+            }],
+        )
     }
 
     #[test]
     fn and() {
-        assert_scanner_results("and", vec![TokenType::AND])
+        assert_scanner_results(
+            "and",
+            vec![Token {
+                token_type: TokenType::AND,
+                literal: None,
+                lexeme: Some(vec!['a', 'n', 'd']),
+                line: 0,
+            }],
+        )
     }
     #[test]
     fn string() {
-        assert_scanner_results("\"and\"", vec![TokenType::STRING])
+        assert_scanner_results(
+            "\"and\"",
+            vec![Token {
+                token_type: TokenType::STRING,
+                lexeme: Some(vec!['a', 'n', 'd']),
+                literal: Some(Literal::Str("and".to_string())),
+                line: 0,
+            }],
+        )
     }
     #[test]
     fn number() {
-        assert_scanner_results("123", vec![TokenType::NUMBER])
+        assert_scanner_results(
+            "123",
+            vec![Token {
+                token_type: TokenType::NUMBER,
+                lexeme: Some(vec!['1', '2', '3']),
+                literal: Some(Literal::Number(123_f64)),
+                line: 0,
+            }],
+        )
     }
     #[test]
     fn number_with_decimal() {
-        assert_scanner_results("123.123", vec![TokenType::NUMBER])
+        assert_scanner_results(
+            "123.123",
+            vec![Token {
+                token_type: TokenType::NUMBER,
+                lexeme: Some(vec!['1', '2', '3', '.', '1', '2', '3']),
+                literal: Some(Literal::Number(123.123)),
+                line: 0,
+            }],
+        )
+    }
+    #[test]
+    fn number_with_multiple_decimals() {
+        assert_scanner_results(
+            "123.123.123",
+            vec![Token {
+                token_type: TokenType::IDENTIFIER,
+                lexeme: Some(vec!['1', '2', '3', '.', '1', '2', '3', '.', '1', '2', '3']),
+                literal: Some(Literal::Str("123.123.123".to_string())),
+                line: 0,
+            }],
+        )
     }
     #[test]
     fn number_with_decimal_but_word() {
-        assert_scanner_results("123.123ffafaf", vec![TokenType::IDENTIFIER])
+        assert_scanner_results(
+            "123.123ffafaf",
+            vec![Token {
+                token_type: TokenType::IDENTIFIER,
+                lexeme: Some(vec![
+                    '1', '2', '3', '.', '1', '2', '3', 'f', 'f', 'a', 'f', 'a', 'f',
+                ]),
+                line: 0,
+                literal: Some(Literal::Str("123.123ffafaf".to_string())),
+            }],
+        )
     }
     #[test]
     fn unidentified() {
         let eof_token = vec![Token {
             token_type: TokenType::EOF,
-            lexeme: "".to_owned(),
-            literal: "".to_owned(),
+            lexeme: None,
+            literal: None,
             line: 0,
         }];
-        assert_eq!(scan_tokens("@".to_string()).first(), eof_token.first())
+        let result = scan_tokens("@".to_string());
+        // should break out of loop when finding unsupported char?
+        assert_eq!(result.first(), eof_token.first());
+        assert_eq!(result.last(), eof_token.last())
     }
     #[test]
     fn fun() {
-        assert_scanner_results("fun", vec![TokenType::FUN])
+        assert_scanner_results(
+            "fun",
+            vec![Token {
+                token_type: TokenType::FUN,
+                lexeme: Some(vec!['f', 'u', 'n']),
+                line: 0,
+                literal: None,
+            }],
+        )
     }
     #[test]
     fn try_for() {
-        assert_scanner_results("for", vec![TokenType::FOR])
+        assert_scanner_results(
+            "for",
+            vec![Token {
+                token_type: TokenType::FOR,
+                lexeme: Some(vec!['f', 'o', 'r']),
+                line: 0,
+                literal: None,
+            }],
+        )
     }
     #[test]
     fn try_false() {
-        assert_scanner_results("false", vec![TokenType::FALSE])
+        assert_scanner_results(
+            "false",
+            vec![Token {
+                token_type: TokenType::FALSE,
+                lexeme: Some(vec!['f', 'a', 'l', 's', 'e']),
+                line: 0,
+                literal: None,
+            }],
+        )
     }
     #[test]
     fn try_false_fun() {
-        assert_scanner_results("false fun", vec![TokenType::FALSE, TokenType::FUN])
+        assert_scanner_results(
+            "false fun",
+            vec![
+                Token {
+                    token_type: TokenType::FALSE,
+                    lexeme: Some(vec!['f', 'a', 'l', 's', 'e']),
+                    line: 0,
+                    literal: None,
+                },
+                Token {
+                    token_type: TokenType::FUN,
+                    lexeme: Some(vec!['f', 'u', 'n']),
+                    line: 0,
+                    literal: None,
+                },
+            ],
+        )
     }
     #[test]
     fn try_total_word() {
-        assert_scanner_results("falsey", vec![TokenType::IDENTIFIER])
+        assert_scanner_results(
+            "funny",
+            vec![Token {
+                token_type: TokenType::IDENTIFIER,
+                lexeme: Some(vec!['f', 'u', 'n', 'n', 'y']),
+                line: 0,
+                literal: Some(Literal::Identifier("funny".to_string())),
+            }],
+        )
+    }
+    #[test]
+    fn try_total_word_2() {
+        assert_scanner_results(
+            "nile",
+            vec![Token {
+                token_type: TokenType::IDENTIFIER,
+                lexeme: Some(vec!['n', 'i', 'l', 'e']),
+                line: 0,
+                literal: Some(Literal::Identifier("nile".to_string())),
+            }],
+        )
     }
     #[test]
     fn try_decimal_word() {
         assert_scanner_results(
             "var hello = 2.1212 fun",
             vec![
-                TokenType::VAR,
-                TokenType::IDENTIFIER,
-                TokenType::EQUAL,
-                TokenType::NUMBER,
-                TokenType::FUN,
+                Token {
+                    token_type: TokenType::VAR,
+                    lexeme: Some(vec!['v', 'a', 'r']),
+                    line: 0,
+                    literal: None,
+                },
+                Token {
+                    token_type: TokenType::IDENTIFIER,
+                    lexeme: Some(vec!['h', 'e', 'l', 'l', 'o']),
+                    line: 0,
+                    literal: Some(Literal::Identifier("hello".to_string())),
+                },
+                Token::new_token(TokenType::EQUAL),
+                Token {
+                    token_type: TokenType::NUMBER,
+                    lexeme: Some(vec!['2', '.', '1', '2', '1', '2']),
+                    line: 0,
+                    literal: Some(Literal::Number(2.1212)),
+                },
+                Token {
+                    token_type: TokenType::FUN,
+                    lexeme: Some(vec!['f', 'u', 'n']),
+                    line: 0,
+                    literal: None,
+                },
             ],
         )
     }
